@@ -396,6 +396,8 @@ export default function TemplateDetailPage() {
                           value={previewValues[field.name]}
                           onChange={(e) => handleInputChange(field.name, e.target.value)}
                           className="w-full h-10 rounded-md border border-gray-300 dark:border-gray-700"
+                          title={field.description}
+                          placeholder={field.description}
                         />
                       ) : (
                         <Input

@@ -26,12 +26,15 @@ export default function LandingPage() {
   useEffect(() => {
     const fetchTemplates = async () => {
       try {
-        const response = await axios.get<ApiResponse>(API_ENDPOINTS.templates, {
+        const response = await axios.get <ApiResponse>(API_ENDPOINTS.templates, {
           params: {
-            sort: 'newest',
-            limit: 4
-          }
+            page: 1,
+            limit: 4,
+          },
         });
+        if (response.status !== 200) {
+          throw new Error("Failed to fetch templates");
+        }
         setTemplates(response.data.templates);
       } catch (error) {
         console.error("Error fetching templates:", error);

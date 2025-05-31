@@ -41,13 +41,18 @@ app.use((err, req, res, next) => {
 
 // Database connection
 mongoose
-  .connect(process.env.MONGO_URI || 'mongodb://localhost:27017/wedding-invitation')
+  .connect(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/wedding-invitation', {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    family: 4, // ✅ Dùng IPv4, tránh dùng ::1
+  })
   .then(() => {
-    console.log("Connected to MongoDB successfully");
+    console.log("✅ Connected to MongoDB successfully");
   })
   .catch((err) => {
-    console.error("Error connecting to MongoDB:", err);
+    console.error("❌ Error connecting to MongoDB:", err);
   });
+
 
 // Routes
 app.use("/api/dashboard", dashboardRoutes); 
