@@ -1,23 +1,44 @@
 const User = require("../models/User");
-const bcrypt = require("bcryptjs");
 const WeddingInvitation = require("../models/WeddingInvitation");
+const bcrypt = require("bcryptjs");
+const multer = require("multer");
+const path = require("path");
+const jwt = require("jsonwebtoken");
 
-// Controller to get all users
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "public/uploads");
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname}`);
+  },
+});
+const upload = multer({
+  storage,
+  fileFilter: (req, file, cb) => {
+    const filetypes = /jpeg|jpg|png|gif/;
+    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = filetypes.test(file.mimetype);
+    if (extname && mimetype) {
+      return cb(null, true);
+    }
+    cb(new Error("Chỉ hỗ trợ file ảnh (jpeg, jpg, png, gif)"));
+  },
+  limits: { fileSize: 2 * 1024 * 1024 }, // 2MB
+}).single("profilePicture");
+
 exports.getAllUsers = async (req, res) => {
   try {
     console.log("Fetching all users...");
-    const users = await User.find()
-      .select('-password')
-      .sort({ registeredAt: -1 });
+    const users = await User.find().select("-password").sort({ registeredAt: -1 });
 
-    // Get wedding invitation counts for each user
     const usersWithInvitationCount = await Promise.all(
       users.map(async (user) => {
         const invitationCount = await WeddingInvitation.countDocuments({ user: user._id });
         const userObj = user.toObject();
         return {
           ...userObj,
-          weddingInvitationCount: invitationCount
+          weddingInvitationCount: invitationCount,
         };
       })
     );
@@ -26,154 +47,142 @@ exports.getAllUsers = async (req, res) => {
     res.status(200).json(usersWithInvitationCount);
   } catch (error) {
     console.error("Error fetching users:", error);
-    res.status(500).json({ 
-      message: "Error fetching users",
-      error: error.message 
+    res.status(500).json({
+      message: "Lỗi khi lấy danh sách người dùng",
+      error: error.message,
     });
   }
 };
 
-// Controller to authenticate user
-exports.login = async (req, res) => {
+exports.getUserDetails = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const userId = req.params.userId === "me" ? req.user._id : req.params.userId;
 
-    // Validate required fields
-    if (!email || !password) {
-      return res.status(400).json({
-        message: "Email and password are required"
-      });
-    }
-
-    // Find user by email
-    const user = await User.findOne({ email });
+    const user = await User.findById(userId).select("-password");
     if (!user) {
-      return res.status(401).json({
-        message: "Invalid email or password"
-      });
+      return res.status(404).json({ message: "Không tìm thấy người dùng" });
     }
 
-    // Compare password
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(401).json({
-        message: "Invalid email or password"
-      });
-    }
-
-    // Remove password from response
-    const userResponse = user.toObject();
-    delete userResponse.password;
+    const weddingInvitations = await WeddingInvitation.find({ user: userId })
+      .populate("template", "name thumbnail")
+      .sort({ createdAt: -1 });
 
     res.status(200).json({
-      message: "Login successful",
-      user: userResponse
+      user,
+      weddingInvitations,
     });
   } catch (error) {
-    console.error("Error during login:", error);
+    console.error("Error fetching user details:", error);
     res.status(500).json({
-      message: "Error during login",
-      error: error.message
+      message: "Không thể tải thông tin người dùng",
+      error: error.message,
     });
   }
 };
 
-// Controller to add a new user
 exports.addUser = async (req, res) => {
-  try {
-    console.log("Adding new user with data:", JSON.stringify(req.body, null, 2));
-
-    const { name, email, role, gender, phone, password, address, country, dateOfBirth, profilePicture, status } = req.body;
-
-    // Validate required fields
-    const requiredFields = ['name', 'email', 'phone', 'password', 'address', 'country', 'dateOfBirth'];
-    const missingFields = requiredFields.filter(field => !req.body[field]);
-    
-    if (missingFields.length > 0) {
-      console.log("Missing required fields:", missingFields);
-      return res.status(400).json({
-        message: `Missing required fields: ${missingFields.join(', ')}`,
-        missingFields
-      });
+  upload(req, res, async (err) => {
+    if (err) {
+      console.error("Upload error:", err);
+      return res.status(400).json({ message: err.message });
     }
 
-    // Check if phone number already exists
-    const existingUser = await User.findOne({ phone });
-    if (existingUser) {
-      return res.status(400).json({
-        message: `Phone number ${phone} is already registered. Please use a different phone number.`,
-        field: 'phone'
+    try {
+      console.log("Adding new user with data:", JSON.stringify(req.body, null, 2));
+
+      const { name, email, role, gender, phone, password, address, country, dateOfBirth, status } = req.body;
+
+      const requiredFields = ["name", "email", "phone", "password", "address", "country", "dateOfBirth"];
+      const missingFields = requiredFields.filter((field) => !req.body[field]);
+
+      if (missingFields.length > 0) {
+        console.log("Missing required fields:", missingFields);
+        return res.status(400).json({
+          message: `Vui lòng điền đầy đủ các trường: ${missingFields.join(", ")}`,
+          missingFields,
+        });
+      }
+
+      const existingUser = await User.findOne({ $or: [{ phone }, { email }] });
+      if (existingUser) {
+        if (existingUser.phone === phone) {
+          return res.status(400).json({
+            message: `Số điện thoại ${phone} đã được đăng ký. Vui lòng sử dụng số khác.`,
+            field: "phone",
+          });
+        }
+        if (existingUser.email === email) {
+          return res.status(400).json({
+            message: `Email ${email} đã được đăng ký. Vui lòng sử dụng email khác.`,
+            field: "email",
+          });
+        }
+      }
+
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(password, salt);
+
+      const newUser = new User({
+        name,
+        email,
+        role,
+        gender,
+        phone,
+        password: hashedPassword,
+        address,
+        country,
+        dateOfBirth,
+        profilePicture: req.file ? `/uploads/${req.file.filename}` : null,
+        status: status || "active",
+      });
+
+      console.log("Saving user to database...");
+      await newUser.save();
+      console.log("User saved successfully");
+
+      const userResponse = newUser.toObject();
+      delete userResponse.password;
+
+      const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
+              // Set cookie with proper configuration for cross-origin
+        const cookieOptions = {
+          httpOnly: true,
+          maxAge: 7 * 24 * 60 * 60 * 1000,
+          sameSite: 'lax',
+          secure: process.env.NODE_ENV === 'production'
+        };
+        
+        res.cookie("token", token, cookieOptions);
+        console.log("Register - Cookie set with options:", cookieOptions);
+      res.status(201).json({ message: "Đăng ký thành công", user: userResponse, token });
+    } catch (error) {
+      console.error("Error adding user:", error);
+
+      if (error.code === 11000) {
+        const field = Object.keys(error.keyPattern)[0];
+        const value = error.keyValue[field];
+        return res.status(400).json({
+          message: `${field === "phone" ? "Số điện thoại" : "Email"} ${value} đã được đăng ký. Vui lòng sử dụng ${field === "phone" ? "số điện thoại" : "email"} khác.`,
+          field,
+        });
+      }
+
+      if (error.name === "ValidationError") {
+        const errors = Object.values(error.errors).map((err) => err.message);
+        return res.status(400).json({
+          message: "Lỗi dữ liệu",
+          errors,
+        });
+      }
+
+      res.status(500).json({
+        message: "Lỗi khi đăng ký",
+        error: error.message,
       });
     }
-
-    // Check if email already exists
-    const existingEmail = await User.findOne({ email });
-    if (existingEmail) {
-      return res.status(400).json({
-        message: `Email ${email} is already registered. Please use a different email.`,
-        field: 'email'
-      });
-    }
-
-    // Hash password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    // Create a new user
-    const newUser = new User({
-      name,
-      email,
-      role,
-      gender,
-      phone,
-      password: hashedPassword, // Save hashed password
-      address,
-      country,
-      dateOfBirth,
-      profilePicture,
-      status,
-    });
-
-    // Save to database
-    console.log("Saving user to database...");
-    await newUser.save();
-    console.log("User saved successfully");
-
-    // Remove password from response
-    const userResponse = newUser.toObject();
-    delete userResponse.password;
-
-    res.status(201).json({ message: "User added successfully", user: userResponse });
-  } catch (error) {
-    console.error("Error adding user:", error);
-    
-    if (error.code === 11000) {
-      // Handle duplicate key error
-      const field = Object.keys(error.keyPattern)[0];
-      const value = error.keyValue[field];
-      return res.status(400).json({
-        message: `${field === 'phone' ? 'Phone number' : 'Email'} ${value} is already registered. Please use a different ${field === 'phone' ? 'phone number' : 'email'}.`,
-        field
-      });
-    }
-
-    if (error.name === 'ValidationError') {
-      // Handle validation errors
-      const errors = Object.values(error.errors).map(err => err.message);
-      return res.status(400).json({
-        message: "Validation error",
-        errors
-      });
-    }
-
-    res.status(500).json({ 
-      message: "Error adding user", 
-      error: error.message 
-    });
-  }
+  });
 };
 
-// Controller to update user status
 exports.updateUserStatus = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -181,35 +190,33 @@ exports.updateUserStatus = async (req, res) => {
 
     const user = await User.findById(userId);
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({ message: "Không tìm thấy người dùng" });
     }
 
     user.status = status;
     await user.save();
 
     res.status(200).json({
-      message: "User status updated successfully",
+      message: "Cập nhật trạng thái thành công",
       user: {
         ...user.toObject(),
-        password: undefined
-      }
+        password: undefined,
+      },
     });
   } catch (error) {
     console.error("Error updating user status:", error);
-    res.status(500).json({ 
-      message: "Error updating user status",
-      error: error.message 
+    res.status(500).json({
+      message: "Lỗi khi cập nhật trạng thái",
+      error: error.message,
     });
   }
 };
 
-// Controller to update user
 exports.updateUser = async (req, res) => {
   try {
     const { userId } = req.params;
     const updateData = req.body;
 
-    // Remove sensitive fields from update data
     delete updateData.password;
     delete updateData._id;
 
@@ -218,72 +225,39 @@ exports.updateUser = async (req, res) => {
       return res.status(404).json({ message: "Không tìm thấy người dùng" });
     }
 
-    // Update user
     Object.assign(user, updateData);
     await user.save();
 
-    // Remove password from response
     const userResponse = user.toObject();
     delete userResponse.password;
 
     res.status(200).json({
       message: "Cập nhật thông tin người dùng thành công",
-      user: userResponse
+      user: userResponse,
     });
   } catch (error) {
     console.error("Error updating user:", error);
-    
+
     if (error.code === 11000) {
-      // Handle duplicate key error
       const field = Object.keys(error.keyPattern)[0];
       const value = error.keyValue[field];
       return res.status(400).json({
-        message: `${field === 'phone' ? 'Số điện thoại' : 'Email'} ${value} đã được sử dụng. Vui lòng sử dụng ${field === 'phone' ? 'số điện thoại' : 'email'} khác.`,
-        field
+        message: `${field === "phone" ? "Số điện thoại" : "Email"} ${value} đã được sử dụng. Vui lòng sử dụng ${field === "phone" ? "số điện thoại" : "email"} khác.`,
+        field,
       });
     }
 
-    if (error.name === 'ValidationError') {
-      // Handle validation errors
-      const errors = Object.values(error.errors).map(err => err.message);
+    if (error.name === "ValidationError") {
+      const errors = Object.values(error.errors).map((err) => err.message);
       return res.status(400).json({
         message: "Lỗi dữ liệu",
-        errors
+        errors,
       });
     }
 
-    res.status(500).json({ 
+    res.status(500).json({
       message: "Không thể cập nhật thông tin người dùng",
-      error: error.message 
-    });
-  }
-};
-
-// Controller to get user details and wedding invitations
-exports.getUserDetails = async (req, res) => {
-  try {
-    const { userId } = req.params;
-
-    // Get user details
-    const user = await User.findById(userId).select('-password');
-    if (!user) {
-      return res.status(404).json({ message: "Không tìm thấy người dùng" });
-    }
-
-    // Get user's wedding invitations with populated template information
-    const weddingInvitations = await WeddingInvitation.find({ user: userId })
-      .populate('template', 'name thumbnail') // Populate template name and thumbnail
-      .sort({ createdAt: -1 });
-
-    res.status(200).json({
-      user,
-      weddingInvitations
-    });
-  } catch (error) {
-    console.error("Error fetching user details:", error);
-    res.status(500).json({ 
-      message: "Không thể tải thông tin người dùng",
-      error: error.message 
+      error: error.message,
     });
   }
 };

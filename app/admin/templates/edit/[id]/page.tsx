@@ -89,12 +89,7 @@ export default function EditTemplatePage() {
 
     try {
       setIsUploading(true);
-      const token = localStorage.getItem("token");
-      if (!token) {
-        toast.error("Vui lòng đăng nhập lại");
-        router.push("/admin/login");
-        return;
-      }
+      // Remove token check since we use cookies now
 
       // Validate price for paid templates
       if (priceType === 'paid' && (!priceAmount || priceAmount <= 0)) {
@@ -118,10 +113,10 @@ export default function EditTemplatePage() {
         comparePrice: priceType === 'paid' ? comparePrice : 0,
         ...(thumbnail && { thumbnail })
       }, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          ...(thumbnail && { 'Content-Type': 'multipart/form-data' })
-        },
+        withCredentials: true, // Use cookies instead of localStorage
+        ...(thumbnail && { 
+          headers: { 'Content-Type': 'multipart/form-data' } 
+        }),
       });
 
       toast.success("Cập nhật mẫu thiệp thành công");
@@ -308,7 +303,9 @@ export default function EditTemplatePage() {
               <div className="max-h-[300px] overflow-y-auto pr-2 space-y-4">
                 {template.dynamicFields.map((field) => (
                   <div key={field.id} className="grid gap-2">
-                    <Label>{field.description}</Label>
+                    <Label htmlFor={field.type === "color" ? `color-${field.name}` : `field-${field.name}`}>
+                      {field.description}
+                    </Label>
                     {field.type === "color" ? (
                       <input
                         type="color"
@@ -318,6 +315,8 @@ export default function EditTemplatePage() {
                           [field.name]: e.target.value
                         }))}
                         className="w-full h-10 rounded-md border border-gray-300 dark:border-gray-700"
+                        id={`color-${field.name}`}
+                        aria-label={field.description}
                       />
                     ) : (
                       <input
@@ -328,6 +327,9 @@ export default function EditTemplatePage() {
                           [field.name]: e.target.value
                         }))}
                         className="w-full h-10 px-3 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800"
+                        id={`field-${field.name}`}
+                        aria-label={field.description}
+                        placeholder={`Nhập ${field.description.toLowerCase()}`}
                       />
                     )}
                   </div>

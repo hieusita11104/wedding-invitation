@@ -20,10 +20,7 @@ export default function AdminLayout({
     const checkAuth = async () => {
       try {
         const response = await fetch(`${API_BASE_URL}/auth/me`, {
-          credentials: 'include',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
+          credentials: 'include' // Use cookies only, no Authorization header needed
         })
         if (!response.ok) {
           router.push("/login")

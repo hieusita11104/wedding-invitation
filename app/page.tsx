@@ -10,6 +10,7 @@ import { useEffect, useState } from "react"
 import axios from "axios"
 import { API_ENDPOINTS } from "@/app/config/api"
 import { Template } from "@/interface/Template"
+import { Chatbot } from '@/components/ui/chatbot'
 
 interface ApiResponse {
   templates: Template[];
@@ -315,6 +316,9 @@ export default function LandingPage() {
 
       {/* Footer */}
       <Footer />
+
+      {/* Chatbot */}
+      <Chatbot />
     </div>
   )
 }

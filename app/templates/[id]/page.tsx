@@ -106,17 +106,17 @@ export default function TemplateDetailPage() {
         })
         setPreviewValues(initialValues)
         
-        // Check authentication
-        const token = localStorage.getItem("token")
-        if (token) {
+        // Check authentication using cookies
+        try {
           const userRes = await axios.get(`${API_BASE_URL}/auth/me`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+            withCredentials: true // Use cookies instead of localStorage
           })
           if (userRes.data) {
             setUser((userRes.data as UserResponse).user)
           }
+        } catch (error) {
+          // User not authenticated, setUser remains null
+          console.log("User not authenticated")
         }
 
         setError(null)
@@ -237,28 +237,57 @@ export default function TemplateDetailPage() {
       return
     }
 
+    // Validate required fields
+    if (!template?._id) {
+      toast.error("Không tìm thấy thông tin mẫu thiệp")
+      return
+    }
+
+    if (!previewValues['tên_cô_dâu'] || !previewValues['tên_chú_rể']) {
+      toast.error("Vui lòng nhập tên cô dâu và chú rể")
+      return
+    }
+
+    // Validate all required dynamic fields
+    const missingFields = template.dynamicFields
+      .filter(field => !previewValues[field.name])
+      .map(field => field.description)
+
+    if (missingFields.length > 0) {
+      toast.error(`Vui lòng điền đầy đủ thông tin: ${missingFields.join(", ")}`)
+      return
+    }
+
     setIsSaving(true)
     try {
-      const response = await axios.post(`${API_BASE_URL}/wedding-invitations`, {
+      console.log("Saving template with data:", {
         templateId: template?._id,
         userId: user?.id,
-        fields: previewValues,
-        groomName: previewValues['tên_cô_dâu'],
-        brideName: previewValues['tên_chú_rể'],
+        fields: previewValues
+      });
+
+      const response = await axios.post(API_ENDPOINTS.weddingInvitations, {
+        templateId: template?._id,
+        userId: user?.id,
+        fields: previewValues
       }, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
+        withCredentials: true
       })
+
+      console.log("Save response:", response.data);
 
       if (!response.data) throw new Error("Failed to save")
 
       const data = response.data as { data: { slug: string } }
-      toast.success("Saved successfully")
+      toast.success("Đã lưu thiệp cưới thành công!")
       router.push(`/wedding/${data.data.slug}`)
-    } catch (error) {
-      console.error("Save error:", error)
-      toast.error("Failed to save")
+    } catch (error: any) {
+      console.error("Save error details:", {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+      toast.error(error.response?.data?.message || "Lỗi khi lưu thiệp cưới")
     } finally {
       setIsSaving(false)
     }

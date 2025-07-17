@@ -87,9 +87,7 @@ export default function UsersPage() {
         `${API_ENDPOINTS.users}/${userId}/status`,
         { status: newStatus },
         {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
+          withCredentials: true // Use cookies instead of localStorage
         }
       )
 

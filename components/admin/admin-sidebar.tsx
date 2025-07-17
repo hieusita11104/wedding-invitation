@@ -55,12 +55,8 @@ export default function AdminSidebar({ user }: AdminSidebarProps) {
     try {
       await fetch(`${API_BASE_URL}/auth/logout`, { 
         method: "POST",
-        credentials: 'include',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+        credentials: 'include' // Use cookies only, no Authorization header needed
       })
-      localStorage.removeItem('token')
       router.push("/login")
     } catch (error) {
       console.error("Logout error:", error)

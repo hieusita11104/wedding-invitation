@@ -57,14 +57,11 @@ export default function TemplatesPage() {
   const fetchTemplates = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
       const response = await axios.get(`${API_ENDPOINTS.templates}/admin/all`, {
         params: {
           sort: 'newest'
         },
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        withCredentials: true // Use cookies instead of localStorage
       });
       setTemplates(response.data as Template[]);
     } catch (error: any) {
@@ -78,11 +75,8 @@ export default function TemplatesPage() {
   // Hàm xóa template
   const handleDeleteTemplate = async (id: string) => {
     try {
-      const token = localStorage.getItem("token");
       await axios.delete(`${API_ENDPOINTS.templates}/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        withCredentials: true // Use cookies instead of localStorage
       });
       toast.success("Xóa mẫu thiệp thành công");
       fetchTemplates();

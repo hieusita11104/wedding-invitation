@@ -108,8 +108,13 @@ export default function AddUserSidebar({ isOpen, onClose, onUserAdded }: AddUser
                 <div className="p-4 border-b border-gray-200 dark:border-gray-800">
                     <div className="flex justify-between items-center">
                         <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Thêm người dùng mới</h2>
-                        <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
+                        <button 
+                            onClick={onClose} 
+                            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
+                            aria-label="Đóng form thêm người dùng"
+                        >
                             <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                            <span className="sr-only">Đóng form thêm người dùng</span>
                         </button>
                     </div>
                 </div>
@@ -121,80 +126,96 @@ export default function AddUserSidebar({ isOpen, onClose, onUserAdded }: AddUser
                     )}
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tên</label>
+                            <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tên</label>
                             <input
+                                id="name"
                                 type="text"
                                 name="name"
                                 value={formData.name}
                                 onChange={handleChange}
                                 className={`w-full border border-gray-300 dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white ${validationErrors.some(e => e.field === 'name') ? 'border-red-500' : ''}`}
                                 required
+                                placeholder="Nhập tên người dùng"
+                                aria-label="Tên người dùng"
                             />
                             {validationErrors.find(e => e.field === 'name') && (
                                 <p className="text-red-500 text-sm mt-1">{validationErrors.find(e => e.field === 'name')?.message}</p>
                             )}
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                            <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
                             <input
+                                id="email"
                                 type="email"
                                 name="email"
                                 value={formData.email}
                                 onChange={handleChange}
                                 className={`w-full border border-gray-300 dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white ${validationErrors.some(e => e.field === 'email') ? 'border-red-500' : ''}`}
                                 required
+                                placeholder="Nhập địa chỉ email"
+                                aria-label="Địa chỉ email"
                             />
                             {validationErrors.find(e => e.field === 'email') && (
                                 <p className="text-red-500 text-sm mt-1">{validationErrors.find(e => e.field === 'email')?.message}</p>
                             )}
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Số điện thoại</label>
+                            <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Số điện thoại</label>
                             <input
+                                id="phone"
                                 type="text"
                                 name="phone"
                                 value={formData.phone}
                                 onChange={handleChange}
                                 className={`w-full border border-gray-300 dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white ${validationErrors.some(e => e.field === 'phone') ? 'border-red-500' : ''}`}
                                 required
+                                placeholder="Nhập số điện thoại"
+                                aria-label="Số điện thoại"
                             />
                             {validationErrors.find(e => e.field === 'phone') && (
                                 <p className="text-red-500 text-sm mt-1">{validationErrors.find(e => e.field === 'phone')?.message}</p>
                             )}
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Mật khẩu</label>
+                            <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Mật khẩu</label>
                             <input
+                                id="password"
                                 type="password"
                                 name="password"
                                 value={formData.password}
                                 onChange={handleChange}
                                 className={`w-full border border-gray-300 dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white ${validationErrors.some(e => e.field === 'password') ? 'border-red-500' : ''}`}
                                 required
+                                placeholder="Nhập mật khẩu"
+                                aria-label="Mật khẩu"
                             />
                             {validationErrors.find(e => e.field === 'password') && (
                                 <p className="text-red-500 text-sm mt-1">{validationErrors.find(e => e.field === 'password')?.message}</p>
                             )}
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Vai trò</label>
+                            <label htmlFor="role" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Vai trò</label>
                             <select
+                                id="role"
                                 name="role"
                                 value={formData.role}
                                 onChange={handleChange}
                                 className="w-full border border-gray-300 dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                                aria-label="Vai trò người dùng"
                             >
                                 <option value="user">Người dùng</option>
                                 <option value="admin">Admin</option>
                             </select>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Giới tính</label>
+                            <label htmlFor="gender" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Giới tính</label>
                             <select
+                                id="gender"
                                 name="gender"
                                 value={formData.gender}
                                 onChange={handleChange}
                                 className="w-full border border-gray-300 dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                                aria-label="Giới tính"
                             >
                                 <option value="male">Nam</option>
                                 <option value="female">Nữ</option>
@@ -202,64 +223,77 @@ export default function AddUserSidebar({ isOpen, onClose, onUserAdded }: AddUser
                             </select>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Địa chỉ</label>
+                            <label htmlFor="address" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Địa chỉ</label>
                             <input
+                                id="address"
                                 type="text"
                                 name="address"
                                 value={formData.address}
                                 onChange={handleChange}
                                 className={`w-full border border-gray-300 dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white ${validationErrors.some(e => e.field === 'address') ? 'border-red-500' : ''}`}
                                 required
+                                placeholder="Nhập địa chỉ"
+                                aria-label="Địa chỉ"
                             />
                             {validationErrors.find(e => e.field === 'address') && (
                                 <p className="text-red-500 text-sm mt-1">{validationErrors.find(e => e.field === 'address')?.message}</p>
                             )}
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Quốc gia</label>
+                            <label htmlFor="country" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Quốc gia</label>
                             <input
+                                id="country"
                                 type="text"
                                 name="country"
                                 value={formData.country}
                                 onChange={handleChange}
                                 className={`w-full border border-gray-300 dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white ${validationErrors.some(e => e.field === 'country') ? 'border-red-500' : ''}`}
                                 required
+                                placeholder="Nhập quốc gia"
+                                aria-label="Quốc gia"
                             />
                             {validationErrors.find(e => e.field === 'country') && (
                                 <p className="text-red-500 text-sm mt-1">{validationErrors.find(e => e.field === 'country')?.message}</p>
                             )}
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ngày sinh</label>
+                            <label htmlFor="dateOfBirth" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ngày sinh</label>
                             <input
+                                id="dateOfBirth"
                                 type="date"
                                 name="dateOfBirth"
                                 value={formData.dateOfBirth}
                                 onChange={handleChange}
                                 className={`w-full border border-gray-300 dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white ${validationErrors.some(e => e.field === 'dateOfBirth') ? 'border-red-500' : ''}`}
                                 required
+                                aria-label="Ngày sinh"
                             />
                             {validationErrors.find(e => e.field === 'dateOfBirth') && (
                                 <p className="text-red-500 text-sm mt-1">{validationErrors.find(e => e.field === 'dateOfBirth')?.message}</p>
                             )}
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ảnh đại diện</label>
+                            <label htmlFor="profilePicture" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ảnh đại diện</label>
                             <input
+                                id="profilePicture"
                                 type="text"
                                 name="profilePicture"
                                 value={formData.profilePicture}
                                 onChange={handleChange}
                                 className="w-full border border-gray-300 dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                                placeholder="Nhập URL ảnh đại diện"
+                                aria-label="URL ảnh đại diện"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Trạng thái</label>
+                            <label htmlFor="status" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Trạng thái</label>
                             <select
+                                id="status"
                                 name="status"
                                 value={formData.status}
                                 onChange={handleChange}
                                 className="w-full border border-gray-300 dark:border-gray-700 p-2 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                                aria-label="Trạng thái người dùng"
                             >
                                 <option value="active">Đang hoạt động</option>
                                 <option value="inactive">Không hoạt động</option>

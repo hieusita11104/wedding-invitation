@@ -1,24 +1,13 @@
 const express = require("express");
-const usersController = require("../controllers/usersController");
+  const userController = require("../controllers/usersController"); // Sửa từ userController thành usersController
+  const { isAuthenticated } = require("../middleware/auth");
 
-const router = express.Router();
+  const router = express.Router();
 
-// Route to get all users
-router.get("/", usersController.getAllUsers);
+  router.get("/", userController.getAllUsers);
+  router.get("/:userId", isAuthenticated, userController.getUserDetails);
+  router.post("/", userController.addUser); // Route POST cho đăng ký
+  router.patch("/:userId/status", isAuthenticated, userController.updateUserStatus);
+  router.patch("/:userId", isAuthenticated, userController.updateUser);
 
-// Route to get user details
-router.get("/:userId", usersController.getUserDetails);
-
-// Route to add a new user
-router.post("/", usersController.addUser);
-
-// Route to login
-router.post("/login", usersController.login);
-
-// Route to update user status
-router.patch("/:userId/status", usersController.updateUserStatus);
-
-// Route to update user information
-router.patch("/:userId", usersController.updateUser);
-
-module.exports = router;
+  module.exports = router;

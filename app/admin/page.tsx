@@ -43,11 +43,8 @@ export default function AdminDashboardPage() {
     const fetchStats = async () => {
       try {
         setLoading(true)
-        const token = localStorage.getItem("token")
         const response = await axios.get(`${API_ENDPOINTS.dashboard}/stats`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          withCredentials: true // Use cookies instead of localStorage
         })
         const responseData = response.data as DashboardStats
         setStats(responseData)

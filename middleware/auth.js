@@ -4,8 +4,23 @@ const User = require('../models/User');
 // Middleware kiểm tra xác thực
 exports.isAuthenticated = async (req, res, next) => {
   try {
-    // Lấy token từ header
-    const token = req.headers.authorization?.split(' ')[1];
+    // Debug cookies
+    console.log('Cookies received:', req.cookies);
+    console.log('All headers:', req.headers);
+    
+    // Lấy token từ cookie hoặc header
+    let token = req.cookies?.token;
+    
+    // Nếu không có token trong cookie, thử lấy từ header Authorization
+    if (!token) {
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.split(' ')[1];
+      }
+    }
+    
+    console.log('Token found:', token ? 'Yes' : 'No');
+    
     if (!token) {
       return res.status(401).json({ message: 'Không tìm thấy token xác thực' });
     }
@@ -31,8 +46,17 @@ exports.isAuthenticated = async (req, res, next) => {
 // Middleware kiểm tra quyền admin
 exports.isAdmin = async (req, res, next) => {
   try {
-    // Lấy token từ header
-    const token = req.headers.authorization?.split(' ')[1];
+    // Lấy token từ cookie hoặc header
+    let token = req.cookies?.token;
+    
+    // Nếu không có token trong cookie, thử lấy từ header Authorization
+    if (!token) {
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.split(' ')[1];
+      }
+    }
+    
     if (!token) {
       return res.status(401).json({ message: 'Không tìm thấy token xác thực' });
     }
